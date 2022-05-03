@@ -4,6 +4,7 @@ import log from '../logger';
 import {DriverConfig} from './driver-config';
 import {Manifest} from './manifest';
 import {PluginConfig} from './plugin-config';
+import B from 'bluebird';
 
 /**
  * Loads extensions and creates `ExtensionConfig` instances.
@@ -18,13 +19,13 @@ import {PluginConfig} from './plugin-config';
  */
 export async function loadExtensions(appiumHome) {
   const manifest = Manifest.getInstance(appiumHome);
-  const {drivers, plugins} = await manifest.read();
+  await manifest.read();
   const driverConfig =
-    DriverConfig.getInstance(manifest) ??
-    DriverConfig.create(manifest, {extData: drivers});
+    DriverConfig.getInstance(manifest) ?? DriverConfig.create(manifest);
   const pluginConfig =
-    PluginConfig.getInstance(manifest) ??
-    PluginConfig.create(manifest, {extData: plugins});
+    PluginConfig.getInstance(manifest) ?? PluginConfig.create(manifest);
+
+  await B.all([driverConfig.validate(), pluginConfig.validate()]);
   return {driverConfig, pluginConfig};
 }
 
@@ -96,6 +97,6 @@ export function getActiveDrivers(driverConfig, useDrivers = []) {
 
 /**
  * @typedef ExtensionConfigs
- * @property {DriverConfig} driverConfig
- * @property {PluginConfig} pluginConfig
+ * @property {import('./driver-config').DriverConfig} driverConfig
+ * @property {import('./plugin-config').PluginConfig} pluginConfig
  */
